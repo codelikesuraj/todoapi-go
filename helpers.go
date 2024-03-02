@@ -15,5 +15,8 @@ func jsonResponse(w http.ResponseWriter, statusCode int, data any) {
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		panic(err)
 	}
-	w.WriteHeader(statusCode)
+
+	if statusCode != 0 {
+		w.WriteHeader(statusCode)
+	}
 }

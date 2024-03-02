@@ -13,10 +13,10 @@ import (
 
 func CustomNotFound(w http.ResponseWriter, r *http.Request) {
 	msg := map[string]string{"message": "we no get am"}
-	statusCode := http.StatusNotFound
+	w.WriteHeader(http.StatusNotFound)
 
 	if acceptsJson(r) {
-		jsonResponse(w, statusCode, msg)
+		jsonResponse(w, 0, msg)
 		return
 	}
 
@@ -25,7 +25,6 @@ func CustomNotFound(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	w.WriteHeader(statusCode)
 	if err = tmpl.Execute(w, msg); err != nil {
 		panic(err)
 	}
@@ -33,10 +32,10 @@ func CustomNotFound(w http.ResponseWriter, r *http.Request) {
 
 func CustomMethodNotAllowed(w http.ResponseWriter, r *http.Request) {
 	msg := map[string]string{"message": "We no like this your manner of approach"}
-	statusCode := http.StatusMethodNotAllowed
+	w.WriteHeader(http.StatusMethodNotAllowed)
 
 	if acceptsJson(r) {
-		jsonResponse(w, statusCode, msg)
+		jsonResponse(w, 0, msg)
 		return
 	}
 
@@ -45,7 +44,6 @@ func CustomMethodNotAllowed(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	w.WriteHeader(statusCode)
 	if err = tmpl.Execute(w, msg); err != nil {
 		panic(err)
 	}
