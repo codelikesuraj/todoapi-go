@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"strconv"
@@ -11,24 +12,65 @@ import (
 )
 
 func CustomNotFound(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusNotFound)
-	json.NewEncoder(w).Encode(map[string]string{"message": "We no get am"})
+	msg := map[string]string{"message": "we no get am"}
+	statusCode := http.StatusNotFound
+
+	if acceptsJson(r) {
+		jsonResponse(w, statusCode, msg)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/errors/404.html")
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(statusCode)
+	if err = tmpl.Execute(w, msg); err != nil {
+		panic(err)
+	}
 }
 
 func CustomMethodNotAllowed(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusMethodNotAllowed)
-	json.NewEncoder(w).Encode(map[string]string{"message": "We no like this your manner of approach"})
+	msg := map[string]string{"message": "We no like this your manner of approach"}
+	statusCode := http.StatusMethodNotAllowed
+
+	if acceptsJson(r) {
+		jsonResponse(w, statusCode, msg)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/errors/405.html")
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(statusCode)
+	if err = tmpl.Execute(w, msg); err != nil {
+		panic(err)
+	}
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Welcome!")
+	if acceptsJson(r) {
+		jsonResponse(w, http.StatusOK, map[string]string{
+			"message": "Welcome!!! This is a response to a json request",
+		})
+		return
+	}
+
+	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/homepage.html")
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err = tmpl.Execute(w, nil); err != nil {
+		panic(err)
+	}
 }
 
 func TodoCreate(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	var todo Todo
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
@@ -41,70 +83,97 @@ func TodoCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.Unmarshal(body, &todo); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		if err := json.NewEncoder(w).Encode(map[string]string{"message": "unprocessable entity"}); err != nil {
-			panic(err)
-		}
+		jsonResponse(w, http.StatusUnprocessableEntity, map[string]string{"message": "unprocessable entity"})
 		return
 	}
 
 	t, err := RepoCreateTodo(todo)
 	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		if err := json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprint(err)}); err != nil {
-			panic(err)
-		}
+		jsonResponse(w, http.StatusUnprocessableEntity, map[string]string{"message": fmt.Sprint(err)})
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(t); err != nil {
-		panic(err)
-	}
+	jsonResponse(w, http.StatusCreated, t)
 }
 
 func TodoIndex(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	if acceptsJson(r) {
+		jsonResponse(w, http.StatusOK, repoTodos)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/todos/index.html")
+	if err != nil {
+		panic(err)
+	}
+
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(repoTodos); err != nil {
+	if err = tmpl.Execute(w, map[string]Todos{"todos": repoTodos}); err != nil {
 		panic(err)
 	}
 }
 
 func TodoShow(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 	todo, err := RepoFindTodo(id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		if err := json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprint(err)}); err != nil {
-			panic(err)
+		msg := map[string]string{"message": fmt.Sprint(err)}
+		statusCode := http.StatusNotFound
+
+		if acceptsJson(r) {
+			jsonResponse(w, statusCode, msg)
+		} else {
+			tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/errors/404.html")
+			if err != nil {
+				panic(err)
+			}
+
+			w.WriteHeader(statusCode)
+			if err = tmpl.Execute(w, msg); err != nil {
+				panic(err)
+			}
 		}
 		return
 	}
 
+	if acceptsJson(r) {
+		jsonResponse(w, http.StatusOK, todo)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/todos/show.html")
+	if err != nil {
+		panic(err)
+	}
+
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(todo); err != nil {
+	if err = tmpl.Execute(w, map[string]Todo{"todo": todo}); err != nil {
 		panic(err)
 	}
 }
 
-func TodoShowByStatus(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+func TodoShowCompleted(w http.ResponseWriter, r *http.Request) {
+	TodoShowByStatus(w, r, true)
+}
 
-	status, err := strconv.ParseBool(mux.Vars(r)["status"])
-	if err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		if err := json.NewEncoder(w).Encode(map[string]string{"message": fmt.Sprint(err)}); err != nil {
-			panic(err)
-		}
+func TodoShowPending(w http.ResponseWriter, r *http.Request) {
+	TodoShowByStatus(w, r, false)
+}
+
+func TodoShowByStatus(w http.ResponseWriter, r *http.Request, status bool) {
+	todos := RepoFindTodoByStatus(status)
+	if acceptsJson(r) {
+		jsonResponse(w, http.StatusOK, todos)
 		return
 	}
 
-	todos := RepoFindTodoByStatus(status)
+	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/todos/index.html")
+	if err != nil {
+		panic(err)
+	}
+
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(todos); err != nil {
+	if err = tmpl.Execute(w, map[string]Todos{"todos": todos}); err != nil {
 		panic(err)
 	}
 }

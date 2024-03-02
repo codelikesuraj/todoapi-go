@@ -1,0 +1,10 @@
+{{define "title"}}Todo - {{.todo.Name}}{{end}}
+
+{{define "content"}}
+<h1>Todos > {{.todo.Id}}</h1>
+<ul>
+    <li>ID: {{.todo.Id}}</li>
+    <li>Task: {{.todo.Name}}</li>
+    <li>Status: {{if .todo.Completed}}Completed{{else}}Pending{{end}}</li>
+</ul>
+{{end}}

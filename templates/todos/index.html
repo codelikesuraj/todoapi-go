@@ -1,0 +1,25 @@
+{{define "title"}}Todos{{end}}
+
+{{define "content"}}
+<h1>Todos</h1>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Todo</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .todos}}
+        <tr>
+            <td>{{.Id}}</td>
+            <td>{{.Name}}</td>
+            <td>{{if .Completed}}Completed{{else}}Pending{{end}}</td>
+            <td><a href="/todos/{{.Id}}">View</a></td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

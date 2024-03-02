@@ -7,9 +7,9 @@ import (
 )
 
 func NewRouter() *mux.Router {
-	router := mux.NewRouter()
-	router.MethodNotAllowedHandler = Logger(http.HandlerFunc(CustomMethodNotAllowed), "ErrorRouteNotFound")
-	router.NotFoundHandler = Logger(http.HandlerFunc(CustomNotFound), "ErrorMethodNotAllowed")
+	router := mux.NewRouter().StrictSlash(true)
+	router.MethodNotAllowedHandler = Logger(http.HandlerFunc(CustomMethodNotAllowed), "ErrorMethodNotAllowed")
+	router.NotFoundHandler = Logger(http.HandlerFunc(CustomNotFound), "ErrorRouteNotFound")
 	for _, route := range routes {
 		router.
 			Methods(route.Method).
