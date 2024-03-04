@@ -3,8 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
-	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -13,141 +12,163 @@ import (
 
 func CustomNotFound(w http.ResponseWriter, r *http.Request) {
 	msg := map[string]string{"message": "we no get am"}
-	w.WriteHeader(http.StatusNotFound)
-
 	if acceptsJson(r) {
-		jsonResponse(w, 0, msg)
+		jsonResponse(w, msg)
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/errors/404.html")
-	if err != nil {
-		panic(err)
-	}
-
-	if err = tmpl.Execute(w, msg); err != nil {
-		panic(err)
-	}
+	renderTemplate(
+		w,
+		[]string{
+			"./templates/layout.html",
+			"./templates/errors/404.html",
+		},
+		msg,
+	)
 }
 
 func CustomMethodNotAllowed(w http.ResponseWriter, r *http.Request) {
 	msg := map[string]string{"message": "We no like this your manner of approach"}
-	w.WriteHeader(http.StatusMethodNotAllowed)
-
 	if acceptsJson(r) {
-		jsonResponse(w, 0, msg)
+		jsonResponse(w, msg)
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/errors/405.html")
-	if err != nil {
-		panic(err)
-	}
-
-	if err = tmpl.Execute(w, msg); err != nil {
-		panic(err)
-	}
+	renderTemplate(
+		w,
+		[]string{
+			"./templates/layout.html",
+			"./templates/errors/405.html",
+		},
+		msg,
+	)
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	if acceptsJson(r) {
-		jsonResponse(w, http.StatusOK, map[string]string{
+		jsonResponse(w, map[string]string{
 			"message": "Welcome!!! This is a response to a json request",
 		})
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/homepage.html")
-	if err != nil {
-		panic(err)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err = tmpl.Execute(w, nil); err != nil {
-		panic(err)
-	}
+	renderTemplate(
+		w,
+		[]string{
+			"./templates/layout.html",
+			"./templates/homepage.html",
+		},
+		nil,
+	)
 }
 
-func TodoCreate(w http.ResponseWriter, r *http.Request) {
+func TodoStore(w http.ResponseWriter, r *http.Request) {
 	var todo Todo
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1048576))
-	if err != nil {
-		panic(err)
-	}
-
-	if err = r.Body.Close(); err != nil {
-		panic(err)
-	}
-
-	if err := json.Unmarshal(body, &todo); err != nil {
-		jsonResponse(w, http.StatusUnprocessableEntity, map[string]string{"message": "unprocessable entity"})
-		return
+	if acceptsJson(r) {
+		if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
+			jsonResponse(w, map[string]string{"message": "unprocessable entity"})
+			return
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			log.Println(err)
+			return
+		}
+		todo.Name = r.FormValue("name")
 	}
 
 	t, err := RepoCreateTodo(todo)
-	if err != nil {
-		jsonResponse(w, http.StatusUnprocessableEntity, map[string]string{"message": fmt.Sprint(err)})
+
+	if acceptsJson(r) {
+		if err != nil {
+			jsonResponse(w, map[string]string{"message": fmt.Sprint(err)})
+		} else {
+			jsonResponse(w, t)
+		}
+
 		return
 	}
 
-	jsonResponse(w, http.StatusCreated, t)
+	http.Redirect(w, r, "/todos/create?message=todo created successfully", http.StatusMovedPermanently)
+}
+
+func TodoCreate(w http.ResponseWriter, r *http.Request) {
+	if acceptsJson(r) {
+		CustomNotFound(w, r)
+		return
+	}
+
+	renderTemplate(
+		w,
+		[]string{
+			"./templates/layout.html",
+			"./templates/todos/create.html",
+		},
+		map[string]string{
+			"message": r.URL.Query().Get("message"),
+		},
+	)
 }
 
 func TodoIndex(w http.ResponseWriter, r *http.Request) {
+	todos := RepoGetAll()
+
 	if acceptsJson(r) {
-		jsonResponse(w, http.StatusOK, repoTodos)
+		jsonResponse(w, todos)
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/todos/index.html")
-	if err != nil {
-		panic(err)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err = tmpl.Execute(w, map[string]Todos{"todos": repoTodos}); err != nil {
-		panic(err)
-	}
+	renderTemplate(
+		w,
+		[]string{
+			"./templates/layout.html",
+			"./templates/todos/index.html",
+		},
+		map[string]any{
+			"todos":     todos,
+			"pageTitle": "Todos - List",
+		},
+	)
 }
 
 func TodoShow(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
-	todo, err := RepoFindTodo(id)
+	todo, err := RepoFindTodoById(id)
 	if err != nil {
 		msg := map[string]string{"message": fmt.Sprint(err)}
-		statusCode := http.StatusNotFound
 
 		if acceptsJson(r) {
-			jsonResponse(w, statusCode, msg)
+			jsonResponse(w, msg)
+			return
 		} else {
-			tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/errors/404.html")
-			if err != nil {
-				panic(err)
-			}
-
-			w.WriteHeader(statusCode)
-			if err = tmpl.Execute(w, msg); err != nil {
-				panic(err)
-			}
+			renderTemplate(
+				w,
+				[]string{
+					"./templates/layout.html",
+					"./templates/errors/404.html",
+				},
+				msg,
+			)
 		}
 		return
 	}
 
 	if acceptsJson(r) {
-		jsonResponse(w, http.StatusOK, todo)
+		jsonResponse(w, todo)
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/todos/show.html")
-	if err != nil {
-		panic(err)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err = tmpl.Execute(w, map[string]Todo{"todo": todo}); err != nil {
-		panic(err)
-	}
+	renderTemplate(w,
+		[]string{
+			"./templates/layout.html",
+			"./templates/todos/show.html",
+		},
+		map[string]any{
+			"todo":      todo,
+			"pageTitle": fmt.Sprint("Todos - ", todo.Id),
+		},
+	)
 }
 
 func TodoShowCompleted(w http.ResponseWriter, r *http.Request) {
@@ -159,19 +180,25 @@ func TodoShowPending(w http.ResponseWriter, r *http.Request) {
 }
 
 func TodoShowByStatus(w http.ResponseWriter, r *http.Request, status bool) {
+	pageTitle := "Todo - Completed"
+	if !status {
+		pageTitle = "Todo - Pending"
+	}
 	todos := RepoFindTodoByStatus(status)
 	if acceptsJson(r) {
-		jsonResponse(w, http.StatusOK, todos)
+		jsonResponse(w, todos)
 		return
 	}
 
-	tmpl, err := template.ParseFiles("./templates/layout.html", "./templates/todos/index.html")
-	if err != nil {
-		panic(err)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	if err = tmpl.Execute(w, map[string]Todos{"todos": todos}); err != nil {
-		panic(err)
-	}
+	renderTemplate(
+		w,
+		[]string{
+			"./templates/layout.html",
+			"./templates/todos/index.html",
+		},
+		map[string]any{
+			"todos":     todos,
+			"pageTitle": pageTitle,
+		},
+	)
 }

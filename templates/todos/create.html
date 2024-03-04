@@ -1,0 +1,20 @@
+{{define "pageTitle"}}Todos - Create{{end}}
+{{define "content"}}
+<h1>Create todo</h1>
+{{if .message}}
+<p>{{.message}}</p>
+{{end}}
+<form method="post" action="/todos/store">
+    <label>
+        Todo: <input name="name" type="text" required/>
+    </label><br>
+    <label>
+        Status:
+        <select name="completed" required>
+            <option value=false selected>Pending</option>
+            <option value=true>Completed</option>
+        </select>
+    </label><br>
+    <button>Submit</button>
+</form>
+{{end}}

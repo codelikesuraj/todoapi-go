@@ -14,7 +14,8 @@ type Routes []Route
 var routes = Routes{
 	Route{"Index", "GET", "/", Index},
 	Route{"TodoIndex", "GET", "/todos", TodoIndex},
-	Route{"TodoCreate", "POST", "/todos", TodoCreate},
+	Route{"TodoCreate", "GET", "/todos/create", TodoCreate},
+	Route{"TodoStore", "POST", "/todos/store", TodoStore},
 	Route{"TodoStatusCompleted", "GET", "/todos/completed", TodoShowCompleted},
 	Route{"TodoStatusPending", "GET", "/todos/pending", TodoShowPending},
 	Route{"TodoShow", "GET", "/todos/{id}", TodoShow},
