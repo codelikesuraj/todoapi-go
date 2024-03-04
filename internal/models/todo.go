@@ -1,37 +1,28 @@
-package main
+package models
 
 import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	_ "github.com/go-sql-driver/mysql"
+	"todoapi/internal/helpers"
 )
 
-var (
-	db  *sql.DB
-	err error
-)
-
-func init() {
-
-	fmt.Println("Setting up database...")
-
-	db, err = sql.Open("mysql", "root:root@tcp(localhost:3306)/todoapigo?parseTime=true")
-	if err != nil {
-		panic(err)
-	}
-
-	if err = db.Ping(); err != nil {
-		panic(err)
-	}
-
-	time.Sleep(time.Millisecond * 500)
-
-	fmt.Println("Database setup complete")
+type Todo struct {
+	Id        int       `field:"id" json:"id"`
+	Name      string    `field:"name" json:"name"`
+	Completed bool      `field:"completed" json:"completed"`
+	Due       time.Time `field:"due" json:"due"`
 }
 
-func RepoGetAll() Todos {
+type Todos []Todo
+
+var db *sql.DB
+
+func init() {
+	db, _ = helpers.GetDatabaseConnection()
+}
+
+func (t Todo) FetchAll() Todos {
 	rows, err := db.Query("SELECT * FROM todos")
 	if err != nil {
 		panic(err)
@@ -56,8 +47,8 @@ func RepoGetAll() Todos {
 	return Todos{}
 }
 
-func RepoCreateTodo(t Todo) (Todo, error) {
-	if len(t.Name) < 1 {
+func (t Todo) Create(todo Todo) (Todo, error) {
+	if len(todo.Name) < 1 {
 		return Todo{}, fmt.Errorf("name is required")
 	}
 
@@ -68,11 +59,11 @@ func RepoCreateTodo(t Todo) (Todo, error) {
 
 	defer stmt.Close()
 
-	if t.Due.Equal(time.Time{}) {
-		t.Due = time.Now().Add(time.Hour)
+	if todo.Due.Equal(time.Time{}) {
+		todo.Due = time.Now().Add(time.Hour)
 	}
 
-	result, err := stmt.Exec(t.Name, t.Completed, t.Due)
+	result, err := stmt.Exec(todo.Name, todo.Completed, todo.Due)
 	if err != nil {
 		panic(err)
 	}
@@ -82,28 +73,10 @@ func RepoCreateTodo(t Todo) (Todo, error) {
 		panic(err)
 	}
 
-	return RepoFindTodoById(int(id))
+	return t.FindById(int(id))
 }
 
-func RepoDestroyTodo(id int) error {
-	todo, err := RepoFindTodoById(id)
-	if err != nil {
-		return err
-	}
-
-	stmt, err := db.Prepare("DELETE FROM todos WHERE id = ?")
-	if err != nil {
-		panic(err)
-	}
-	_, err = stmt.Exec(todo.Id)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func RepoFindTodoById(id int) (Todo, error) {
+func (t Todo) FindById(id int) (Todo, error) {
 	var todo Todo
 
 	row := db.QueryRow("SELECT * FROM todos WHERE id = ?", id)
@@ -118,7 +91,7 @@ func RepoFindTodoById(id int) (Todo, error) {
 	return todo, nil
 }
 
-func RepoFindTodoByStatus(status bool) Todos {
+func (t Todo) FindByStatus(status bool) Todos {
 	rows, err := db.Query("SELECT * FROM todos WHERE completed = ?", status)
 	if err != nil {
 		panic(err)
