@@ -1,7 +1,7 @@
 {{define "pageTitle"}}{{.pageTitle}}{{end}}
 
 {{define "content"}}
-<h1>Todos > {{.todo.Id}}</h1>
+<h1><a href="/todos">Todos</a> > {{.todo.Id}}</h1>
 <ul>
     <li>ID: {{.todo.Id}}</li>
     <li>Task: {{.todo.Name}}</li>

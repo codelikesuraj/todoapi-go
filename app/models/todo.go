@@ -3,8 +3,11 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
-	"todoapi/internal/helpers"
+	"todoapi/app/utils"
+
+	"github.com/joho/godotenv"
 )
 
 type Todo struct {
@@ -19,13 +22,14 @@ type Todos []Todo
 var db *sql.DB
 
 func init() {
-	db, _ = helpers.GetDatabaseConnection()
+	godotenv.Load()
+	db, _ = utils.GetDatabaseConnection()
 }
 
-func (t Todo) FetchAll() Todos {
+func FetchAllTodos() Todos {
 	rows, err := db.Query("SELECT * FROM todos")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	var (
@@ -47,14 +51,14 @@ func (t Todo) FetchAll() Todos {
 	return Todos{}
 }
 
-func (t Todo) Create(todo Todo) (Todo, error) {
+func CreateTodo(todo Todo) (Todo, error) {
 	if len(todo.Name) < 1 {
 		return Todo{}, fmt.Errorf("name is required")
 	}
 
 	stmt, err := db.Prepare("INSERT INTO todos (todo, completed, due) VALUES (?, ?, ?)")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	defer stmt.Close()
@@ -65,18 +69,18 @@ func (t Todo) Create(todo Todo) (Todo, error) {
 
 	result, err := stmt.Exec(todo.Name, todo.Completed, todo.Due)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	return t.FindById(int(id))
+	return FindTodoById(int(id))
 }
 
-func (t Todo) FindById(id int) (Todo, error) {
+func FindTodoById(id int) (Todo, error) {
 	var todo Todo
 
 	row := db.QueryRow("SELECT * FROM todos WHERE id = ?", id)
@@ -86,15 +90,15 @@ func (t Todo) FindById(id int) (Todo, error) {
 			return Todo{}, fmt.Errorf("todo not found")
 		}
 
-		panic(err)
+		log.Fatal(err)
 	}
 	return todo, nil
 }
 
-func (t Todo) FindByStatus(status bool) Todos {
+func FetchTodosByStatus(status bool) Todos {
 	rows, err := db.Query("SELECT * FROM todos WHERE completed = ?", status)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	var (

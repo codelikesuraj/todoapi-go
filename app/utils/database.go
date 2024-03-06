@@ -1,4 +1,4 @@
-package helpers
+package utils
 
 import (
 	"database/sql"
@@ -14,7 +14,7 @@ func GetDatabaseConnection() (*sql.DB, error) {
 	dbPort := os.Getenv("DB_PORT")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
+	dbName := os.Getenv("DB_DATABASE")
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
 

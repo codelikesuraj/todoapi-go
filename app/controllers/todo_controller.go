@@ -1,4 +1,4 @@
-package controllers
+package todo_controller
 
 import (
 	"encoding/json"
@@ -6,27 +6,25 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"todoapi/internal/helpers"
-	"todoapi/internal/models"
+	"todoapi/app/models"
+	"todoapi/app/utils"
 
 	"github.com/gorilla/mux"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	var todo models.Todo
+	todos := models.FetchAllTodos()
 
-	todos := todo.FetchAll()
-
-	if helpers.AcceptsJson(r) {
-		helpers.JsonResponse(w, todos)
+	if utils.AcceptsJson(r) {
+		utils.JsonResponse(w, todos)
 		return
 	}
 
-	helpers.RenderTemplate(
+	utils.RenderTemplate(
 		w,
 		[]string{
-			"./templates/layout.html",
-			"./templates/todos/index.html",
+			"./resources/views/layout.html",
+			"./resources/views/todos/index.html",
 		},
 		map[string]any{
 			"todos":     todos,
@@ -38,9 +36,9 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func Store(w http.ResponseWriter, r *http.Request) {
 	var todo models.Todo
 
-	if helpers.AcceptsJson(r) {
+	if utils.AcceptsJson(r) {
 		if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-			helpers.JsonResponse(w, map[string]string{"message": "unprocessable entity"})
+			utils.JsonResponse(w, map[string]string{"message": "unprocessable entity"})
 			return
 		}
 	} else {
@@ -51,13 +49,13 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		todo.Name = r.FormValue("name")
 	}
 
-	t, err := todo.Create(todo)
+	t, err := models.CreateTodo(todo)
 
-	if helpers.AcceptsJson(r) {
+	if utils.AcceptsJson(r) {
 		if err != nil {
-			helpers.JsonResponse(w, map[string]string{"message": fmt.Sprint(err)})
+			utils.JsonResponse(w, map[string]string{"message": fmt.Sprint(err)})
 		} else {
-			helpers.JsonResponse(w, t)
+			utils.JsonResponse(w, t)
 		}
 
 		return
@@ -67,16 +65,17 @@ func Store(w http.ResponseWriter, r *http.Request) {
 }
 
 func Create(w http.ResponseWriter, r *http.Request) {
-	if helpers.AcceptsJson(r) {
-		http.NotFound(w, r)
+	if utils.AcceptsJson(r) {
+		w.WriteHeader(http.StatusNotFound)
+		utils.JsonResponse(w, map[string]string{"message": "unavailable for api routes"})
 		return
 	}
 
-	helpers.RenderTemplate(
+	utils.RenderTemplate(
 		w,
 		[]string{
-			"./templates/layout.html",
-			"./templates/todos/create.html",
+			"./resources/views/layout.html",
+			"./resources/views/todos/create.html",
 		},
 		map[string]string{
 			"message": r.URL.Query().Get("message"),
@@ -85,21 +84,20 @@ func Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowById(w http.ResponseWriter, r *http.Request) {
-	var t models.Todo
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
-	todo, err := t.FindById(id)
+	todo, err := models.FindTodoById(id)
 	if err != nil {
 		msg := map[string]string{"message": fmt.Sprint(err)}
 
-		if helpers.AcceptsJson(r) {
-			helpers.JsonResponse(w, msg)
+		if utils.AcceptsJson(r) {
+			utils.JsonResponse(w, msg)
 			return
 		} else {
-			helpers.RenderTemplate(
+			utils.RenderTemplate(
 				w,
 				[]string{
-					"./templates/layout.html",
-					"./templates/errors/404.html",
+					"./resources/views/layout.html",
+					"./resources/views/errors/404.html",
 				},
 				msg,
 			)
@@ -107,15 +105,15 @@ func ShowById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if helpers.AcceptsJson(r) {
-		helpers.JsonResponse(w, todo)
+	if utils.AcceptsJson(r) {
+		utils.JsonResponse(w, todo)
 		return
 	}
 
-	helpers.RenderTemplate(w,
+	utils.RenderTemplate(w,
 		[]string{
-			"./templates/layout.html",
-			"./templates/todos/show.html",
+			"./resources/views/layout.html",
+			"./resources/views/todos/show.html",
 		},
 		map[string]any{
 			"todo":      todo,
@@ -133,22 +131,21 @@ func ShowPending(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowByStatus(w http.ResponseWriter, r *http.Request, status bool) {
-	var t models.Todo
 	pageTitle := "Todo - Completed"
 	if !status {
 		pageTitle = "Todo - Pending"
 	}
-	todos := t.FindByStatus(status)
-	if helpers.AcceptsJson(r) {
-		helpers.JsonResponse(w, todos)
+	todos := models.FetchTodosByStatus(status)
+	if utils.AcceptsJson(r) {
+		utils.JsonResponse(w, todos)
 		return
 	}
 
-	helpers.RenderTemplate(
+	utils.RenderTemplate(
 		w,
 		[]string{
-			"./templates/layout.html",
-			"./templates/todos/index.html",
+			"./resources/views/layout.html",
+			"./resources/views/todos/index.html",
 		},
 		map[string]any{
 			"todos":     todos,

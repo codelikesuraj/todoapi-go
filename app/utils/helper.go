@@ -1,4 +1,4 @@
-package helpers
+package utils
 
 import (
 	"encoding/json"
@@ -16,18 +16,18 @@ func AcceptsJson(r *http.Request) bool {
 func JsonResponse(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
 func RenderTemplate(w http.ResponseWriter, filenames []string, data any) {
 	tmpl, err := template.ParseFiles(filenames...)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	if err = tmpl.Execute(w, data); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
