@@ -119,3 +119,28 @@ func FetchTodosByStatus(status bool) Todos {
 
 	return Todos{}
 }
+
+func ChangeTodoStatus(t Todo) (Todo, error) {
+	stmt, err := db.Prepare("UPDATE todos SET completed = ? WHERE id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(!t.Completed, t.Id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	updatedTodo, err := FindTodoById(t.Id)
+	if err != nil {
+		return t, err
+	}
+
+	if updatedTodo.Completed == t.Completed {
+		return t, fmt.Errorf("error updating todo")
+	}
+
+	return updatedTodo, nil
+}

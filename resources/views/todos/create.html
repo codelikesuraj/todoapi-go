@@ -2,7 +2,10 @@
 {{define "content"}}
 <h1><a href="/todos">Todos</a> > Create</h1>
 {{if .message}}
-<p>{{.message}}</p>
+<p style="color:green">{{.message}}</p>
+{{end}}
+{{if .error}}
+<p style="color:red">{{.error}}</p>
 {{end}}
 <form method="post" action="/todos/store">
     <label>

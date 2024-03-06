@@ -57,11 +57,14 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		} else {
 			utils.JsonResponse(w, t)
 		}
-
 		return
 	}
 
-	http.Redirect(w, r, "/todos/create?message=todo created successfully", http.StatusMovedPermanently)
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("/todos/create?error=%s", err), http.StatusMovedPermanently)
+	} else {
+		http.Redirect(w, r, "/todos/create?message=todo created successfully", http.StatusMovedPermanently)
+	}
 }
 
 func Create(w http.ResponseWriter, r *http.Request) {
@@ -79,6 +82,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		},
 		map[string]string{
 			"message": r.URL.Query().Get("message"),
+			"error":   r.URL.Query().Get("error"),
 		},
 	)
 }
@@ -118,6 +122,8 @@ func ShowById(w http.ResponseWriter, r *http.Request) {
 		map[string]any{
 			"todo":      todo,
 			"pageTitle": fmt.Sprint("Todos - ", todo.Id),
+			"message":   r.URL.Query().Get("message"),
+			"error":     r.URL.Query().Get("error"),
 		},
 	)
 }
@@ -152,4 +158,45 @@ func ShowByStatus(w http.ResponseWriter, r *http.Request, status bool) {
 			"pageTitle": pageTitle,
 		},
 	)
+}
+
+func ChangeStatus(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	todo, err := models.FindTodoById(id)
+	if err != nil {
+		msg := map[string]string{"message": fmt.Sprint(err)}
+
+		if utils.AcceptsJson(r) {
+			utils.JsonResponse(w, msg)
+			return
+		} else {
+			utils.RenderTemplate(
+				w,
+				[]string{
+					"./resources/views/layout.html",
+					"./resources/views/errors/404.html",
+				},
+				msg,
+			)
+		}
+		return
+	}
+
+	todo, err = models.ChangeTodoStatus(todo)
+
+	if utils.AcceptsJson(r) {
+		if err != nil {
+			utils.JsonResponse(w, map[string]string{"message": fmt.Sprint(err)})
+		} else {
+			utils.JsonResponse(w, todo)
+		}
+
+		return
+	}
+
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("/todos/%d?error=%s", todo.Id, err), http.StatusMovedPermanently)
+	} else {
+		http.Redirect(w, r, fmt.Sprintf("/todos/%d?message=todo updated successfully", todo.Id), http.StatusMovedPermanently)
+	}
 }

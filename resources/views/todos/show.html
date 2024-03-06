@@ -2,9 +2,24 @@
 
 {{define "content"}}
 <h1><a href="/todos">Todos</a> > {{.todo.Id}}</h1>
+{{if .message}}
+<p style="color:green">{{.message}}</p>
+{{end}}
+{{if .error}}
+<p style="color:red">{{.error}}</p>
+{{end}}
 <ul>
     <li>ID: {{.todo.Id}}</li>
     <li>Task: {{.todo.Name}}</li>
-    <li>Status: {{if .todo.Completed}}Completed{{else}}Pending{{end}}</li>
+    <li>Status:
+        {{if .todo.Completed}}
+        Completed
+        {{else}}
+        Pending
+        <form method="post" action="/todos/{{.todo.Id}}/status/update">
+            <button>Mark as read</button>
+        </form>
+        {{end}}
+    </li>
 </ul>
 {{end}}
