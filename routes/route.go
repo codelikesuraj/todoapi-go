@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 	todo_controller "todoapi/app/controllers"
+	"todoapi/app/middleware"
 	"todoapi/app/utils"
 
 	"github.com/gorilla/mux"
@@ -38,18 +39,40 @@ func Routes() []Route {
 	}
 }
 
+func Middlewares() []mux.MiddlewareFunc {
+	/**
+	 * +-------------------------------+
+	 * | MIDDLEWARES ARE DEFINED BELOW |
+	 * |    |||     	        |||    |
+	 * |    |||         	    |||    |
+	 * |  \ ||| /  		      \ ||| /  |
+	 * |   \|||/       		   \|||/   |
+	 * |    \|/           	    \|/    |
+	 * |     *              	 *     |
+	 * +-------------------------------+
+	 */
+	return []mux.MiddlewareFunc{
+		middleware.ForceJsonResponse,
+		middleware.LogRequest,
+	}
+}
+
 func Router() *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.MethodNotAllowedHandler = utils.Logger(http.HandlerFunc(MethodNotAllowedHandler), "ErrorMethodNotAllowed")
-	router.NotFoundHandler = utils.Logger(http.HandlerFunc(NotFoundHandler), "ErrorRouteNotFound")
+	router.MethodNotAllowedHandler = http.HandlerFunc(MethodNotAllowedHandler)
+	router.NotFoundHandler = http.HandlerFunc(NotFoundHandler)
 
 	for _, route := range Routes() {
 		router.
 			Methods(route.Method).
 			Name(route.Name).
 			Path(route.Pattern).
-			Handler(utils.Logger(route.HandlerFunc, route.Name))
+			Handler(route.HandlerFunc)
+	}
+
+	for _, middleware := range Middlewares() {
+		router.Use(middleware)
 	}
 
 	return router

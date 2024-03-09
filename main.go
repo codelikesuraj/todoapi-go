@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"todoapi/routes"
 )
 
-const SERVER_PORT = "8888"
+var port = os.Getenv("SERVER_PORT")
 
 func main() {
-	fmt.Printf("Server running on port: %s\n\n", SERVER_PORT)
-	log.Fatal(http.ListenAndServe(":"+SERVER_PORT, routes.Router()))
+	fmt.Printf("Server running on port: %s\n\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, routes.Router()))
 }

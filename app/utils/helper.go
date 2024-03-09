@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 func AcceptsJson(r *http.Request) bool {
@@ -14,7 +13,6 @@ func AcceptsJson(r *http.Request) bool {
 }
 
 func JsonResponse(w http.ResponseWriter, data any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Fatal(err)
 	}
@@ -29,20 +27,4 @@ func RenderTemplate(w http.ResponseWriter, filenames []string, data any) {
 	if err = tmpl.Execute(w, data); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func Logger(inner http.Handler, name string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		inner.ServeHTTP(w, r)
-
-		log.Printf(
-			"%s\t%s\t%s\t%s",
-			r.Method,
-			r.RequestURI,
-			name,
-			time.Since(start),
-		)
-	})
 }
