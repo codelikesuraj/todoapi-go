@@ -26,7 +26,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 			"./resources/views/layout.html",
 			"./resources/views/todos/index.html",
 		},
-		map[string]any{
+		map[string]interface{}{
 			"todos":     todos,
 			"pageTitle": "Todos - List",
 		},
@@ -119,7 +119,7 @@ func ShowById(w http.ResponseWriter, r *http.Request) {
 			"./resources/views/layout.html",
 			"./resources/views/todos/show.html",
 		},
-		map[string]any{
+		map[string]interface{}{
 			"todo":      todo,
 			"pageTitle": fmt.Sprint("Todos - ", todo.Id),
 			"message":   r.URL.Query().Get("message"),
@@ -153,7 +153,7 @@ func ShowByStatus(w http.ResponseWriter, r *http.Request, status bool) {
 			"./resources/views/layout.html",
 			"./resources/views/todos/index.html",
 		},
-		map[string]any{
+		map[string]interface{}{
 			"todos":     todos,
 			"pageTitle": pageTitle,
 		},
