@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +17,16 @@ func JsonResponse(w http.ResponseWriter, data interface{}) {
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func ParsePage(r *http.Request) (int, int) {
+	rows := 5
+	offset, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if offset < 2 {
+		return 0, rows
+	}
+
+	return (offset - 1) * rows, rows
 }
 
 func RenderTemplate(w http.ResponseWriter, filenames []string, data interface{}) {

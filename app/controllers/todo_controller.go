@@ -13,7 +13,7 @@ import (
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	todos := models.FetchAllTodos()
+	todos := models.FetchAllTodos(utils.ParsePage(r))
 
 	if utils.AcceptsJson(r) {
 		utils.JsonResponse(w, todos)
@@ -141,7 +141,8 @@ func ShowByStatus(w http.ResponseWriter, r *http.Request, status bool) {
 	if !status {
 		pageTitle = "Todo - Pending"
 	}
-	todos := models.FetchTodosByStatus(status)
+	offset, maxRows := utils.ParsePage(r)
+	todos := models.FetchTodosByStatus(status, offset, maxRows)
 	if utils.AcceptsJson(r) {
 		utils.JsonResponse(w, todos)
 		return

@@ -26,8 +26,8 @@ func init() {
 	db, _ = utils.GetDatabaseConnection()
 }
 
-func FetchAllTodos() Todos {
-	rows, err := db.Query("SELECT * FROM todos")
+func FetchAllTodos(offset int, maxRows int) Todos {
+	rows, err := db.Query("SELECT * FROM todos LIMIT ?, ?", offset, maxRows)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,8 +95,8 @@ func FindTodoById(id int) (Todo, error) {
 	return todo, nil
 }
 
-func FetchTodosByStatus(status bool) Todos {
-	rows, err := db.Query("SELECT * FROM todos WHERE completed = ?", status)
+func FetchTodosByStatus(status bool, offset int, maxRows int) Todos {
+	rows, err := db.Query("SELECT * FROM todos WHERE completed = ? LIMIT ?, ?", status, offset, maxRows)
 	if err != nil {
 		log.Fatal(err)
 	}
