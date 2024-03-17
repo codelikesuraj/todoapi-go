@@ -76,8 +76,9 @@ func CreateTodo(todo Todo) (Todo, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	todo.Id = int(id)
 
-	return FindTodoById(int(id))
+	return todo, nil
 }
 
 func FindTodoById(id int) (Todo, error) {
