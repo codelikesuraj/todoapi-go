@@ -38,6 +38,7 @@ func Store(w http.ResponseWriter, r *http.Request) {
 
 	if utils.AcceptsJson(r) {
 		if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
+			w.WriteHeader(http.StatusUnprocessableEntity)
 			utils.JsonResponse(w, map[string]string{"message": "unprocessable entity"})
 			return
 		}
@@ -55,6 +56,7 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			utils.JsonResponse(w, map[string]string{"message": fmt.Sprint(err)})
 		} else {
+			w.WriteHeader(http.StatusCreated)
 			utils.JsonResponse(w, t)
 		}
 		return

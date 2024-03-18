@@ -29,13 +29,13 @@ func Routes() []Route {
 		 * |     *              *     |
 		 * +--------------------------+
 		 */
-		{"GET", "/todos", todo_controller.Index, "TodoIndex"},
-		{"GET", "/todos/create", todo_controller.Create, "TodoCreate"},
-		{"POST", "/todos/store", todo_controller.Store, "TodoStore"},
-		{"GET", "/todos/completed", todo_controller.ShowCompleted, "TodoStatusCompleted"},
-		{"GET", "/todos/pending", todo_controller.ShowPending, "TodoStatusPending"},
-		{"GET", "/todos/{id}", todo_controller.ShowById, "TodoShow"},
-		{"POST", "/todos/{id}/status/update", todo_controller.ChangeStatus, "TodoStatusChange"},
+		{http.MethodGet, "/todos", todo_controller.Index, "TodoIndex"},
+		{http.MethodGet, "/todos/create", todo_controller.Create, "TodoCreate"},
+		{http.MethodPost, "/todos/store", todo_controller.Store, "TodoStore"},
+		{http.MethodGet, "/todos/completed", todo_controller.ShowCompleted, "TodoStatusCompleted"},
+		{http.MethodGet, "/todos/pending", todo_controller.ShowPending, "TodoStatusPending"},
+		{http.MethodGet, "/todos/{id}", todo_controller.ShowById, "TodoShow"},
+		{http.MethodPost, "/todos/{id}/status/update", todo_controller.ChangeStatus, "TodoStatusChange"},
 	}
 }
 
