@@ -4,8 +4,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 func LogRequest(next http.Handler) http.Handler {
@@ -13,10 +11,9 @@ func LogRequest(next http.Handler) http.Handler {
 		start := time.Now()
 
 		log.Printf(
-			"%s\t%s\t%s\t%s",
+			" %-5s %-12s %10s",
 			r.Method,
-			r.RequestURI,
-			mux.CurrentRoute(r).GetName(),
+			r.URL.RequestURI(),
 			time.Since(start),
 		)
 

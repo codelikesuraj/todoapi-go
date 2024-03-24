@@ -3,7 +3,6 @@ package todo_controller
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"todoapi/app/models"
@@ -13,7 +12,7 @@ import (
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	todos := models.FetchAllTodos(utils.ParsePage(r))
+	todos := models.FetchAllTodos(utils.Paginate(r))
 
 	if utils.AcceptsJson(r) {
 		utils.JsonResponse(w, todos)
@@ -44,7 +43,7 @@ func Store(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if err := r.ParseForm(); err != nil {
-			log.Println(err)
+			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
 		todo.Name = r.FormValue("name")
@@ -95,6 +94,8 @@ func ShowById(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := map[string]string{"message": fmt.Sprint(err)}
 
+		w.WriteHeader(http.StatusNotFound)
+
 		if utils.AcceptsJson(r) {
 			utils.JsonResponse(w, msg)
 			return
@@ -143,7 +144,7 @@ func ShowByStatus(w http.ResponseWriter, r *http.Request, status bool) {
 	if !status {
 		pageTitle = "Todo - Pending"
 	}
-	offset, maxRows := utils.ParsePage(r)
+	offset, maxRows := utils.Paginate(r)
 	todos := models.FetchTodosByStatus(status, offset, maxRows)
 	if utils.AcceptsJson(r) {
 		utils.JsonResponse(w, todos)

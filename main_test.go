@@ -10,9 +10,9 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
-	todo_controller "todoapi/app/controllers"
 	"todoapi/app/models"
 	"todoapi/app/utils"
+	"todoapi/routes"
 )
 
 func TestListTodos(t *testing.T) {
@@ -29,8 +29,7 @@ func TestListTodos(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(todo_controller.Index)
-	handler.ServeHTTP(rr, req)
+	routes.Router().ServeHTTP(rr, req)
 
 	t.Run("check status OK - 200", func(t *testing.T) {
 		want := http.StatusOK
@@ -57,7 +56,7 @@ func TestListTodos(t *testing.T) {
 	})
 }
 
-func TestCreateTodo(t *testing.T) {
+func TestStoreTodo(t *testing.T) {
 	refreshDatabase()
 
 	todo := models.Todo{Name: "Todo X"}
@@ -66,7 +65,7 @@ func TestCreateTodo(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "/todos/store/", bytes.NewBuffer(body))
+	req, err := http.NewRequest(http.MethodPost, "/todos/store", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -74,8 +73,7 @@ func TestCreateTodo(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(todo_controller.Store)
-	handler.ServeHTTP(rr, req)
+	routes.Router().ServeHTTP(rr, req)
 
 	t.Run("check status CREATED - 201", func(t *testing.T) {
 		want := http.StatusCreated
@@ -98,8 +96,54 @@ func TestCreateTodo(t *testing.T) {
 	})
 }
 
+func TestFetchTodo(t *testing.T) {
+	refreshDatabase()
+	seedDatabase(1)
+
+	t.Run("check status OK - 200", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, "/todos/1", nil)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		req.Header.Set("Accept", "application/json")
+
+		rr := httptest.NewRecorder()
+
+		routes.Router().ServeHTTP(rr, req)
+
+		want := http.StatusOK
+		got := rr.Code
+		if want != got {
+			t.Errorf("incorrect status code - expected '%v', got '%v'", want, got)
+		}
+	})
+
+	t.Run("check status NOT FOUND - 404", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, "/todos/999", nil)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		req.Header.Set("Accept", "application/json")
+
+		rr := httptest.NewRecorder()
+
+		routes.Router().ServeHTTP(rr, req)
+
+		want := http.StatusNotFound
+		got := rr.Code
+		if want != got {
+			t.Errorf("incorrect status code - expected '%v', got '%v'", want, got)
+		}
+	})
+}
+
 func refreshDatabase() {
-	_, err := dbConn().Exec("Delete FROM todos")
+	_, err := dbConn().Exec("DELETE FROM todos")
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	_, err = dbConn().Exec("ALTER TABLE todos AUTO_INCREMENT = 1")
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

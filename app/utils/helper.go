@@ -19,7 +19,7 @@ func JsonResponse(w http.ResponseWriter, data interface{}) {
 	}
 }
 
-func ParsePage(r *http.Request) (int, int) {
+func Paginate(r *http.Request) (int, int) {
 	rows := 5
 	offset, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if offset < 2 {
