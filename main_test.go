@@ -137,6 +137,80 @@ func TestFetchTodo(t *testing.T) {
 	})
 }
 
+func TestFetchByStatus(t *testing.T) {
+	todos := map[string]int{
+		"completed": 5,
+		"pending":   3,
+	}
+
+	refreshDatabase()
+	seedDatabaseWithStatus(todos["completed"], todos["pending"])
+
+	req, err := http.NewRequest(http.MethodGet, "/todos/completed", nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	req.Header.Set("Accept", "application/json")
+	rr := httptest.NewRecorder()
+	routes.Router().ServeHTTP(rr, req)
+
+	t.Run("check COMPLETED has status OK - 200", func(t *testing.T) {
+		want := http.StatusOK
+		got := rr.Code
+		if want != got {
+			t.Errorf("incorrect status code - expected '%v', got '%v'", want, got)
+		}
+	})
+
+	t.Run("check COMPLETED number of todos", func(t *testing.T) {
+		got, want := 0, todos["completed"]
+		rows, err := dbConn().Query("SELECT * FROM todos WHERE completed = 1")
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		for rows.Next() {
+			got++
+		}
+
+		if want != got {
+			t.Errorf("incorrect rows returned - expected '%v' rows, got '%v'", want, got)
+		}
+	})
+
+	req, err = http.NewRequest(http.MethodGet, "/todos/pending", nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	req.Header.Set("Accept", "application/json")
+	rr = httptest.NewRecorder()
+	routes.Router().ServeHTTP(rr, req)
+
+	t.Run("check PENDING has status OK - 200", func(t *testing.T) {
+		want := http.StatusOK
+		got := rr.Code
+		if want != got {
+			t.Errorf("incorrect status code - expected '%v', got '%v'", want, got)
+		}
+	})
+
+	t.Run("check PENDING number of todos", func(t *testing.T) {
+		got, want := 0, todos["pending"]
+		rows, err := dbConn().Query("SELECT * FROM todos WHERE completed = 0")
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+
+		for rows.Next() {
+			got++
+		}
+
+		if want != got {
+			t.Errorf("incorrect rows returned - expected '%v' rows, got '%v'", want, got)
+		}
+	})
+}
+
 func refreshDatabase() {
 	_, err := dbConn().Exec("DELETE FROM todos")
 	if err != nil {
@@ -144,6 +218,43 @@ func refreshDatabase() {
 	}
 
 	_, err = dbConn().Exec("ALTER TABLE todos AUTO_INCREMENT = 1")
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+}
+
+func seedDatabaseWithStatus(completed, pending int) {
+	var (
+		dues  []interface{}
+		query string = "INSERT INTO todos (due, todo, completed) VALUES "
+	)
+
+	for i := 0; i < completed; i++ {
+		dues = append(dues, time.Now().Add(time.Hour))
+		dues = append(dues, true)
+		query += fmt.Sprintf("(?, 'Todo %v', ?)", i)
+		if i < completed-1 || pending > 0 {
+			query += ","
+		}
+	}
+
+	for i := 0; i < pending; i++ {
+		dues = append(dues, time.Now().Add(time.Hour))
+		dues = append(dues, false)
+		query += fmt.Sprintf("(?, 'Todo %v', ?)", i)
+		if i < pending-1 {
+			query += ","
+		}
+	}
+
+	fmt.Println(len(dues))
+
+	stmt, err := dbConn().Prepare(query)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	_, err = stmt.Exec(dues...)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
