@@ -11,7 +11,7 @@ func LogRequest(next http.Handler) http.Handler {
 		start := time.Now()
 
 		log.Printf(
-			" %-5s %-12s %10s",
+			" %-5s %-20s %10s",
 			r.Method,
 			r.URL.RequestURI(),
 			time.Since(start),

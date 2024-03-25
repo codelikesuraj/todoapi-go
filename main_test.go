@@ -247,8 +247,6 @@ func seedDatabaseWithStatus(completed, pending int) {
 		}
 	}
 
-	fmt.Println(len(dues))
-
 	stmt, err := dbConn().Prepare(query)
 	if err != nil {
 		log.Fatalln(err.Error())
