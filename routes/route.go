@@ -35,7 +35,7 @@ func Routes() []Route {
 		{http.MethodGet, "/todos/completed", todo_controller.ShowCompleted, "TodoStatusCompleted"},
 		{http.MethodGet, "/todos/pending", todo_controller.ShowPending, "TodoStatusPending"},
 		{http.MethodGet, "/todos/{id}", todo_controller.ShowById, "TodoShow"},
-		{http.MethodPost, "/todos/{id}/status/update", todo_controller.ChangeStatus, "TodoStatusChange"},
+		{http.MethodPut, "/todos/{id}/status/update", todo_controller.ChangeStatus, "TodoStatusChange"},
 	}
 }
 

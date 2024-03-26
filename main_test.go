@@ -144,7 +144,7 @@ func TestFetchByStatus(t *testing.T) {
 	}
 
 	refreshDatabase()
-	seedDatabaseWithStatus(todos["completed"], todos["pending"])
+	seedDatabaseByStatus(todos["completed"], todos["pending"])
 
 	req, err := http.NewRequest(http.MethodGet, "/todos/completed", nil)
 	if err != nil {
@@ -211,6 +211,43 @@ func TestFetchByStatus(t *testing.T) {
 	})
 }
 
+func TestChangeStatus(t *testing.T) {
+	refreshDatabase()
+	seedDatabase(1)
+
+	want, err := models.FindTodoById(1)
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("/todos/%d/status/update", want.Id), nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	req.Header.Set("Accept", "application/json")
+	rr := httptest.NewRecorder()
+	routes.Router().ServeHTTP(rr, req)
+
+	t.Run("check status OK - 200", func(t *testing.T) {
+		want := http.StatusOK
+		got := rr.Code
+		if want != got {
+			t.Errorf("incorrect status code - expected '%v', got '%v'", want, got)
+		}
+	})
+
+	t.Run("check response body", func(t *testing.T) {
+		var got models.Todo
+		if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+			t.Fatalf(err.Error())
+		}
+
+		if want.Completed == got.Completed {
+			t.Errorf("todo status was not updated - expected %t got %t", !want.Completed, got.Completed)
+		}
+	})
+}
+
 func refreshDatabase() {
 	_, err := dbConn().Exec("DELETE FROM todos")
 	if err != nil {
@@ -223,7 +260,7 @@ func refreshDatabase() {
 	}
 }
 
-func seedDatabaseWithStatus(completed, pending int) {
+func seedDatabaseByStatus(completed, pending int) {
 	var (
 		dues  []interface{}
 		query string = "INSERT INTO todos (due, todo, completed) VALUES "
